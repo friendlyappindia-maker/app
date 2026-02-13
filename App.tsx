@@ -1,23 +1,23 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, UserRole, Referral, ReferralStatus, Hospital } from './types';
-import { MOCK_HOSPITALS, MOCK_DOCTORS, INITIAL_REFERRALS, STATUS_COLORS } from './constants';
+import { 
+  MOCK_HOSPITALS, 
+  MOCK_DOCTORS, 
+  MOCK_HOSPITAL_USERS, 
+  MOCK_MASTER_ADMIN, 
+  INITIAL_REFERRALS, 
+  STATUS_COLORS 
+} from './constants';
 import Layout from './components/Layout';
 import ReferralModal from './components/ReferralModal';
 import AddHospitalModal from './components/AddHospitalModal';
 import AddDoctorModal from './components/AddDoctorModal';
 import { 
   FileText, 
-  TrendingUp, 
   UserPlus, 
   CheckCircle2, 
-  AlertCircle, 
-  ArrowRight,
-  Filter,
-  Search,
   ChevronRight,
-  Clock,
-  ExternalLink,
   ShieldCheck,
   Eye,
   Hospital as HospitalIcon,
@@ -25,29 +25,50 @@ import {
   MapPin,
   Phone,
   Plus,
-  Settings
+  Settings,
+  Lock,
+  User as UserIcon,
+  AlertCircle
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [referrals, setReferrals] = useState<Referral[]>(INITIAL_REFERRALS || []);
   const [hospitals, setHospitals] = useState<Hospital[]>(MOCK_HOSPITALS || []);
-  const [doctors, setDoctors] = useState<User[]>(MOCK_DOCTORS || []);
+  const [users, setUsers] = useState<User[]>([
+    MOCK_MASTER_ADMIN,
+    ...MOCK_DOCTORS,
+    ...MOCK_HOSPITAL_USERS
+  ]);
   const [activeTab, setActiveTab] = useState('dashboard');
   
+  // Login states
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loginMode, setLoginMode] = useState<'DEMO' | 'CREDENTIALS'>('DEMO');
+
   const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
   const [isAddHospitalModalOpen, setIsAddHospitalModalOpen] = useState(false);
   const [isAddDoctorModalOpen, setIsAddDoctorModalOpen] = useState(false);
 
-  useEffect(() => {
-    // Defaulting to doctor for initial demo load if available
-    if (MOCK_DOCTORS && MOCK_DOCTORS.length > 0) {
-      setCurrentUser(MOCK_DOCTORS[0]);
-    }
-  }, []);
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setLoginUsername('');
+    setLoginPassword('');
+    setLoginError('');
+  };
 
-  const handleLogout = () => setCurrentUser(null);
+  const handleCredentialLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const user = users.find(u => u.username === loginUsername && u.password === loginPassword);
+    if (user) {
+      setCurrentUser(user);
+      setLoginError('');
+    } else {
+      setLoginError('Invalid username or password');
+    }
+  };
 
   const handleAddReferral = (data: Partial<Referral>) => {
     const newRef: Referral = {
@@ -64,13 +85,14 @@ const App: React.FC = () => {
     setIsReferralModalOpen(false);
   };
 
-  const handleAddHospital = (hospital: Hospital) => {
+  const handleAddHospital = (hospital: Hospital, adminUser: User) => {
     setHospitals(prev => [...prev, hospital]);
+    setUsers(prev => [...prev, adminUser]);
     setIsAddHospitalModalOpen(false);
   };
 
   const handleAddDoctor = (doctor: User) => {
-    setDoctors(prev => [...prev, doctor]);
+    setUsers(prev => [...prev, doctor]);
     setIsAddDoctorModalOpen(false);
   };
 
@@ -83,22 +105,89 @@ const App: React.FC = () => {
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">MedRef Connect</h1>
             <p className="text-slate-500 mt-2">Private Surgical Referral Network</p>
           </div>
-          <div className="space-y-4">
-            <p className="text-sm font-semibold text-slate-400 uppercase tracking-widest">Select Demo Role</p>
-            <div className="grid grid-cols-1 gap-3">
-              <button onClick={() => setCurrentUser({ id: 'ma1', name: 'System Controller', email: 'master@medref.com', role: UserRole.MASTER_ADMIN })} className="w-full p-4 rounded-xl border-2 border-amber-100 hover:border-amber-500 hover:bg-amber-50 text-left transition-all group flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2"><p className="font-bold text-slate-800">Master Admin</p><ShieldCheck className="w-4 h-4 text-amber-500" /></div>
-                  <p className="text-xs text-slate-500">Platform-wide oversight</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-amber-500" />
-              </button>
-              <button onClick={() => setCurrentUser(MOCK_DOCTORS[0] || null)} className="w-full p-4 rounded-xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 text-left transition-all group flex items-center justify-between">
-                <div><p className="font-bold text-slate-800">MBBS Doctor</p><p className="text-xs text-slate-500">Create and track referrals</p></div>
-                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500" />
-              </button>
-            </div>
+
+          <div className="flex p-1 bg-slate-100 rounded-xl">
+             <button 
+                onClick={() => setLoginMode('DEMO')}
+                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${loginMode === 'DEMO' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+             >
+                Quick Demo
+             </button>
+             <button 
+                onClick={() => setLoginMode('CREDENTIALS')}
+                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${loginMode === 'CREDENTIALS' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+             >
+                Portal Login
+             </button>
           </div>
+
+          {loginMode === 'DEMO' ? (
+            <div className="space-y-4">
+              <p className="text-sm font-semibold text-slate-400 uppercase tracking-widest">Select Access Point</p>
+              <div className="grid grid-cols-1 gap-3">
+                <button onClick={() => setCurrentUser(MOCK_MASTER_ADMIN)} className="w-full p-4 rounded-xl border-2 border-amber-100 hover:border-amber-500 hover:bg-amber-50 text-left transition-all group flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2"><p className="font-bold text-slate-800">Master Admin</p><ShieldCheck className="w-4 h-4 text-amber-500" /></div>
+                    <p className="text-xs text-slate-500">System oversight & management</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-amber-500" />
+                </button>
+                <button onClick={() => setCurrentUser(MOCK_DOCTORS[0])} className="w-full p-4 rounded-xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 text-left transition-all group flex items-center justify-between">
+                  <div><p className="font-bold text-slate-800">Doctor View</p><p className="text-xs text-slate-500">Create & track patient referrals</p></div>
+                  <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500" />
+                </button>
+                <button onClick={() => setCurrentUser(MOCK_HOSPITAL_USERS[0])} className="w-full p-4 rounded-xl border-2 border-indigo-100 hover:border-indigo-500 hover:bg-indigo-50 text-left transition-all group flex items-center justify-between">
+                  <div><p className="font-bold text-slate-800">Hospital Admin</p><p className="text-xs text-slate-500">Manage inbound cases & surgery</p></div>
+                  <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-indigo-500" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleCredentialLogin} className="space-y-4 text-left">
+               <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Username</label>
+                  <div className="relative">
+                    <UserIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                    <input 
+                       required
+                       className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                       placeholder="Enter your username"
+                       value={loginUsername}
+                       onChange={(e) => setLoginUsername(e.target.value)}
+                    />
+                  </div>
+               </div>
+               <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                    <input 
+                       required
+                       type="password"
+                       className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                       placeholder="••••••••"
+                       value={loginPassword}
+                       onChange={(e) => setLoginPassword(e.target.value)}
+                    />
+                  </div>
+               </div>
+               
+               {loginError && (
+                 <div className="flex items-center gap-2 p-3 bg-rose-50 text-rose-600 rounded-xl text-sm border border-rose-100 animate-in fade-in slide-in-from-top-2">
+                    <AlertCircle className="w-4 h-4" />
+                    {loginError}
+                 </div>
+               )}
+
+               <button 
+                  type="submit"
+                  className="w-full py-3.5 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+               >
+                  Sign In to Portal
+                  <ChevronRight className="w-5 h-5" />
+               </button>
+            </form>
+          )}
         </div>
       </div>
     );
@@ -114,19 +203,30 @@ const App: React.FC = () => {
     { label: 'Total Referrals', value: userReferrals.length, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-100' },
     { label: 'Surgery Completed', value: userReferrals.filter(r => r.status === ReferralStatus.SURGERY_COMPLETED).length, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-100' },
     { label: 'Active Hospitals', value: hospitals.length, icon: HospitalIcon, color: 'text-indigo-600', bg: 'bg-indigo-100' },
-    { label: 'Referral Doctors', value: doctors.length, icon: Users, color: 'text-amber-600', bg: 'bg-amber-100' },
+    { label: 'Referral Doctors', value: users.filter(u => u.role === UserRole.REFERRING_DOCTOR).length, icon: Users, color: 'text-amber-600', bg: 'bg-amber-100' },
   ];
 
   const renderDashboard = () => (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Platform Overview</h1>
-          <p className="text-slate-500 mt-1">Global monitoring of the referral ecosystem.</p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+            {currentUser.role === UserRole.MASTER_ADMIN ? 'Platform Overview' : 'Referral Hub'}
+          </h1>
+          <p className="text-slate-500 mt-1">
+            {currentUser.role === UserRole.MASTER_ADMIN ? 'Global monitoring of the referral ecosystem.' : 'Manage and track your active cases.'}
+          </p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => setIsAddHospitalModalOpen(true)} className="flex items-center gap-2 bg-slate-900 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-slate-800 transition-all text-sm shadow-lg shadow-slate-900/10"><Plus className="w-4 h-4" /> Add Hospital</button>
-          <button onClick={() => setIsAddDoctorModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-all text-sm shadow-lg shadow-blue-600/10"><UserPlus className="w-4 h-4" /> Add Doctor</button>
+          {currentUser.role === UserRole.MASTER_ADMIN && (
+            <>
+              <button onClick={() => setIsAddHospitalModalOpen(true)} className="flex items-center gap-2 bg-slate-900 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-slate-800 transition-all text-sm shadow-lg shadow-slate-900/10"><Plus className="w-4 h-4" /> Add Hospital</button>
+              <button onClick={() => setIsAddDoctorModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-all text-sm shadow-lg shadow-blue-600/10"><UserPlus className="w-4 h-4" /> Add Doctor</button>
+            </>
+          )}
+          {currentUser.role === UserRole.REFERRING_DOCTOR && (
+            <button onClick={() => setIsReferralModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-all text-sm shadow-lg shadow-blue-600/10"><Plus className="w-4 h-4" /> New Referral</button>
+          )}
         </div>
       </div>
 
@@ -143,7 +243,9 @@ const App: React.FC = () => {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
           <h3 className="font-bold text-slate-800">Recent Referral Stream</h3>
-          <div className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100"><Eye className="w-3.5 h-3.5" /> READ-ONLY GLOBAL VIEW</div>
+          {currentUser.role === UserRole.MASTER_ADMIN && (
+            <div className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100"><Eye className="w-3.5 h-3.5" /> READ-ONLY GLOBAL VIEW</div>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -157,15 +259,21 @@ const App: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {userReferrals.map((ref) => (
-                <tr key={ref.id} className="hover:bg-slate-50/80 transition-colors group">
-                  <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 font-bold text-sm">{ref.patientName ? ref.patientName[0] : 'P'}</div><div><p className="font-bold text-slate-900 leading-none">{ref.patientName}</p><p className="text-xs text-slate-500 mt-1">{ref.patientMobile}</p></div></div></td>
-                  <td className="px-6 py-4"><p className="text-sm font-medium text-slate-700">{hospitals.find(h => h.id === ref.hospitalId)?.name || 'Unknown Hospital'}</p></td>
-                  <td className="px-6 py-4"><p className="text-sm font-medium text-slate-700">{doctors.find(d => d.id === ref.referringDoctorId)?.name || 'Admin'}</p></td>
-                  <td className="px-6 py-4 text-center"><span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold border ${STATUS_COLORS[ref.status] || 'bg-slate-100 text-slate-600'}`}>{ref.status.replace(/_/g, ' ')}</span></td>
-                  <td className="px-6 py-4 text-sm text-slate-500">{new Date(ref.createdAt).toLocaleDateString()}</td>
+              {userReferrals.length > 0 ? (
+                userReferrals.map((ref) => (
+                  <tr key={ref.id} className="hover:bg-slate-50/80 transition-colors group">
+                    <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 font-bold text-sm">{ref.patientName ? ref.patientName[0] : 'P'}</div><div><p className="font-bold text-slate-900 leading-none">{ref.patientName}</p><p className="text-xs text-slate-500 mt-1">{ref.patientMobile}</p></div></div></td>
+                    <td className="px-6 py-4"><p className="text-sm font-medium text-slate-700">{hospitals.find(h => h.id === ref.hospitalId)?.name || 'Unknown Hospital'}</p></td>
+                    <td className="px-6 py-4"><p className="text-sm font-medium text-slate-700">{users.find(u => u.id === ref.referringDoctorId)?.name || 'Admin'}</p></td>
+                    <td className="px-6 py-4 text-center"><span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold border ${STATUS_COLORS[ref.status] || 'bg-slate-100 text-slate-600'}`}>{ref.status.replace(/_/g, ' ')}</span></td>
+                    <td className="px-6 py-4 text-sm text-slate-500">{new Date(ref.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">No referrals found.</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -180,7 +288,9 @@ const App: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900">Registered Hospitals</h1>
           <p className="text-slate-500">Manage surgical facilities in the MedRef network.</p>
         </div>
-        <button onClick={() => setIsAddHospitalModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"><Plus className="w-5 h-5" /> Register New Hospital</button>
+        {currentUser.role === UserRole.MASTER_ADMIN && (
+          <button onClick={() => setIsAddHospitalModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"><Plus className="w-5 h-5" /> Register New Hospital</button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -204,7 +314,7 @@ const App: React.FC = () => {
             </div>
             <div className="bg-slate-50 p-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-400">
               <span>Primary Contact: {hospital.contactPerson}</span>
-              <button className="text-blue-600 hover:underline">Manage Settings</button>
+              {currentUser.role === UserRole.MASTER_ADMIN && <button className="text-blue-600 hover:underline">Manage Account</button>}
             </div>
           </div>
         ))}
@@ -219,7 +329,9 @@ const App: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900">Referring Doctors</h1>
           <p className="text-slate-500">Network of physicians authorized to create digital referrals.</p>
         </div>
-        <button onClick={() => setIsAddDoctorModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"><UserPlus className="w-5 h-5" /> Authorize New Doctor</button>
+        {currentUser.role === UserRole.MASTER_ADMIN && (
+          <button onClick={() => setIsAddDoctorModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"><UserPlus className="w-5 h-5" /> Authorize New Doctor</button>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -233,12 +345,14 @@ const App: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {doctors.map(doctor => (
+            {users.filter(u => u.role === UserRole.REFERRING_DOCTOR).map(doctor => (
               <tr key={doctor.id} className="hover:bg-slate-50/50 transition-colors group">
                 <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full border border-slate-200 overflow-hidden"><img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${doctor.email}`} alt="avatar" /></div><p className="font-bold text-slate-900">{doctor.name}</p></div></td>
                 <td className="px-6 py-4"><span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded">{doctor.registrationNumber}</span></td>
                 <td className="px-6 py-4 text-sm text-slate-600">{doctor.location}</td>
-                <td className="px-6 py-4 text-right"><button className="text-slate-400 hover:text-blue-600 p-2"><Settings className="w-4 h-4" /></button></td>
+                <td className="px-6 py-4 text-right">
+                  <button className="text-slate-400 hover:text-blue-600 p-2"><Settings className="w-4 h-4" /></button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -255,7 +369,6 @@ const App: React.FC = () => {
       {activeTab === 'referrals' && renderDashboard()}
       {activeTab === 'settings' && <div className="p-12 text-center text-slate-400"><Settings className="w-12 h-12 mx-auto mb-4 opacity-20" /><p className="font-medium">System Settings Coming Soon</p></div>}
       
-      {/* Fix: Corrected typo in prop name from 'referring doctor' to 'referringDoctor' */}
       {isReferralModalOpen && <ReferralModal onClose={() => setIsReferralModalOpen(false)} onSubmit={handleAddReferral} hospitals={hospitals} referringDoctor={currentUser} />}
       {isAddHospitalModalOpen && <AddHospitalModal onClose={() => setIsAddHospitalModalOpen(false)} onSubmit={handleAddHospital} />}
       {isAddDoctorModalOpen && <AddDoctorModal onClose={() => setIsAddDoctorModalOpen(false)} onSubmit={handleAddDoctor} />}

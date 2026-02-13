@@ -23,6 +23,8 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  username?: string;
+  password?: string;
   organizationId?: string;
   registrationNumber?: string;
   location?: string;

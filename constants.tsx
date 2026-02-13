@@ -29,6 +29,8 @@ export const MOCK_DOCTORS: User[] = [
     id: 'd1',
     name: 'Dr. Rajesh Kumar',
     email: 'rajesh.k@clinic.com',
+    username: 'doctor_kumar',
+    password: 'password123',
     role: UserRole.REFERRING_DOCTOR,
     registrationNumber: 'REG-12345',
     location: 'Andheri West, Mumbai'
@@ -37,11 +39,34 @@ export const MOCK_DOCTORS: User[] = [
     id: 'd2',
     name: 'Dr. Anita Desai',
     email: 'anita.d@med.com',
+    username: 'doctor_anita',
+    password: 'password123',
     role: UserRole.REFERRING_DOCTOR,
     registrationNumber: 'REG-54321',
     location: 'Kothrud, Pune'
   }
 ];
+
+export const MOCK_HOSPITAL_USERS: User[] = [
+  {
+    id: 'hu1',
+    name: 'Hospital Admin Mumbai',
+    email: 'admin@citygeneral.com',
+    username: 'hospital_mumbai',
+    password: 'password123',
+    role: UserRole.HOSPITAL_ADMIN,
+    organizationId: 'h1'
+  }
+];
+
+export const MOCK_MASTER_ADMIN: User = {
+  id: 'ma1',
+  name: 'System Controller',
+  email: 'master@medref.com',
+  username: 'admin',
+  password: 'admin_password',
+  role: UserRole.MASTER_ADMIN
+};
 
 export const MOCK_NGOS: NGO[] = [
   { id: 'n1', name: 'Health For All Foundation', mission: 'Rural medical aid' },

@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
-import { X, Hospital as HospitalIcon, Plus, Trash2 } from 'lucide-react';
-import { Hospital } from '../types';
+import { X, Hospital as HospitalIcon, Plus, Trash2, Shield } from 'lucide-react';
+import { Hospital, User, UserRole } from '../types';
 
 interface AddHospitalModalProps {
   onClose: () => void;
-  onSubmit: (hospital: Hospital) => void;
+  onSubmit: (hospital: Hospital, adminUser: User) => void;
 }
 
 const AddHospitalModal: React.FC<AddHospitalModalProps> = ({ onClose, onSubmit }) => {
@@ -16,7 +16,9 @@ const AddHospitalModal: React.FC<AddHospitalModalProps> = ({ onClose, onSubmit }
     city: '',
     contactPerson: '',
     phone: '',
-    capabilities: ['General Surgery']
+    capabilities: ['General Surgery'],
+    username: '',
+    password: ''
   });
   const [newCap, setNewCap] = useState('');
 
@@ -36,11 +38,29 @@ const AddHospitalModal: React.FC<AddHospitalModalProps> = ({ onClose, onSubmit }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const hospitalId = `h-${Date.now()}`;
     const hospital: Hospital = {
-      id: `h-${Date.now()}`,
-      ...formData
+      id: hospitalId,
+      name: formData.name,
+      registrationNumber: formData.registrationNumber,
+      address: formData.address,
+      city: formData.city,
+      contactPerson: formData.contactPerson,
+      phone: formData.phone,
+      capabilities: formData.capabilities
     };
-    onSubmit(hospital);
+
+    const adminUser: User = {
+      id: `hu-${Date.now()}`,
+      name: `${formData.name} Admin`,
+      email: `${formData.username}@medref-hospital.com`,
+      username: formData.username,
+      password: formData.password,
+      role: UserRole.HOSPITAL_ADMIN,
+      organizationId: hospitalId
+    };
+
+    onSubmit(hospital, adminUser);
   };
 
   return (
@@ -61,7 +81,37 @@ const AddHospitalModal: React.FC<AddHospitalModalProps> = ({ onClose, onSubmit }
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+          <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 space-y-4">
+             <div className="flex items-center gap-2 text-indigo-700 mb-2">
+                <Shield className="w-4 h-4" />
+                <span className="text-xs font-bold uppercase tracking-wider">Hospital Admin Account</span>
+             </div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Username</label>
+                  <input
+                    required
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                    placeholder="e.g. apollo_mumbai"
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Password</label>
+                  <input
+                    required
+                    type="password"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  />
+                </div>
+             </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Hospital Name</label>

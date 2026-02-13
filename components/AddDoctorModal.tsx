@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, UserPlus, ShieldCheck } from 'lucide-react';
+import { X, UserPlus, ShieldCheck, Key } from 'lucide-react';
 import { User, UserRole } from '../types';
 
 interface AddDoctorModalProps {
@@ -13,14 +13,21 @@ const AddDoctorModal: React.FC<AddDoctorModalProps> = ({ onClose, onSubmit }) =>
     name: '',
     email: '',
     registrationNumber: '',
-    location: ''
+    location: '',
+    username: '',
+    password: ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const doctor: User = {
       id: `d-${Date.now()}`,
-      ...formData,
+      name: formData.name,
+      email: formData.email,
+      registrationNumber: formData.registrationNumber,
+      location: formData.location,
+      username: formData.username,
+      password: formData.password,
       role: UserRole.REFERRING_DOCTOR
     };
     onSubmit(doctor);
@@ -44,7 +51,37 @@ const AddDoctorModal: React.FC<AddDoctorModalProps> = ({ onClose, onSubmit }) =>
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+          <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 space-y-4">
+             <div className="flex items-center gap-2 text-amber-700 mb-2">
+                <Key className="w-4 h-4" />
+                <span className="text-xs font-bold uppercase tracking-wider">Access Credentials</span>
+             </div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Username</label>
+                  <input
+                    required
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 outline-none bg-white text-sm"
+                    placeholder="dr_smith"
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Password</label>
+                  <input
+                    required
+                    type="password"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 outline-none bg-white text-sm"
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  />
+                </div>
+             </div>
+          </div>
+
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Full Name</label>
             <input
