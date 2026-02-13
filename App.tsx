@@ -4,6 +4,8 @@ import { User, UserRole, Referral, ReferralStatus, Hospital } from './types';
 import { MOCK_HOSPITALS, MOCK_DOCTORS, INITIAL_REFERRALS, STATUS_COLORS } from './constants';
 import Layout from './components/Layout';
 import ReferralModal from './components/ReferralModal';
+import AddHospitalModal from './components/AddHospitalModal';
+import AddDoctorModal from './components/AddDoctorModal';
 import { 
   FileText, 
   TrendingUp, 
@@ -18,9 +20,7 @@ import {
   ExternalLink,
   ShieldCheck,
   Eye,
-  // Fix: Import Hospital as HospitalIcon to avoid name collision with Hospital type from types.ts
   Hospital as HospitalIcon,
-  // Fix: Import missing Users icon
   Users
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -28,8 +28,12 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [referrals, setReferrals] = useState<Referral[]>(INITIAL_REFERRALS);
+  const [hospitals, setHospitals] = useState<Hospital[]>(MOCK_HOSPITALS);
+  const [doctors, setDoctors] = useState<User[]>(MOCK_DOCTORS);
+  
   const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isAddHospitalModalOpen, setIsAddHospitalModalOpen] = useState(false);
+  const [isAddDoctorModalOpen, setIsAddDoctorModalOpen] = useState(false);
 
   // Auto-login for demo purposes
   useEffect(() => {
@@ -52,6 +56,16 @@ const App: React.FC = () => {
     };
     setReferrals([newRef, ...referrals]);
     setIsReferralModalOpen(false);
+  };
+
+  const handleAddHospital = (hospital: Hospital) => {
+    setHospitals([...hospitals, hospital]);
+    setIsAddHospitalModalOpen(false);
+  };
+
+  const handleAddDoctor = (doctor: User) => {
+    setDoctors([...doctors, doctor]);
+    setIsAddDoctorModalOpen(false);
   };
 
   if (!currentUser) {
@@ -83,7 +97,7 @@ const App: React.FC = () => {
                     <p className="font-bold text-slate-800">Master Admin</p>
                     <ShieldCheck className="w-4 h-4 text-amber-500" />
                   </div>
-                  <p className="text-xs text-slate-500">Platform-wide oversight (View Only)</p>
+                  <p className="text-xs text-slate-500">Platform-wide oversight</p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-amber-500" />
               </button>
@@ -171,15 +185,19 @@ const App: React.FC = () => {
 
           {currentUser.role === UserRole.MASTER_ADMIN && (
             <div className="flex gap-3">
-              <button className="flex items-center justify-center gap-2 bg-slate-900 text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:bg-slate-800 text-sm">
-                {/* Fix: Use aliased HospitalIcon to avoid type collision */}
+              <button 
+                onClick={() => setIsAddHospitalModalOpen(true)}
+                className="flex items-center justify-center gap-2 bg-slate-900 text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:bg-slate-800 text-sm"
+              >
                 <HospitalIcon className="w-4 h-4" />
-                Manage Hospitals
+                Add Hospital
               </button>
-              <button className="flex items-center justify-center gap-2 bg-slate-900 text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:bg-slate-800 text-sm">
-                {/* Fix: Use imported Users icon */}
+              <button 
+                onClick={() => setIsAddDoctorModalOpen(true)}
+                className="flex items-center justify-center gap-2 bg-slate-900 text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:bg-slate-800 text-sm"
+              >
                 <Users className="w-4 h-4" />
-                Manage Doctors
+                Add Doctor
               </button>
             </div>
           )}
@@ -260,7 +278,7 @@ const App: React.FC = () => {
                           </td>
                           <td className="px-6 py-4">
                             <p className="text-sm font-medium text-slate-700">
-                              {MOCK_HOSPITALS.find(h => h.id === ref.hospitalId)?.name}
+                              {hospitals.find(h => h.id === ref.hospitalId)?.name}
                             </p>
                             <p className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
                               ID: {ref.id}
@@ -269,7 +287,7 @@ const App: React.FC = () => {
                           {currentUser.role === UserRole.MASTER_ADMIN && (
                             <td className="px-6 py-4">
                               <p className="text-sm font-medium text-slate-700">
-                                {MOCK_DOCTORS.find(d => d.id === ref.referringDoctorId)?.name || 'Admin Referral'}
+                                {doctors.find(d => d.id === ref.referringDoctorId)?.name || 'Admin Referral'}
                               </p>
                             </td>
                           )}
@@ -371,8 +389,22 @@ const App: React.FC = () => {
         <ReferralModal
           onClose={() => setIsReferralModalOpen(false)}
           onSubmit={handleAddReferral}
-          hospitals={MOCK_HOSPITALS}
+          hospitals={hospitals}
           referringDoctor={currentUser}
+        />
+      )}
+
+      {isAddHospitalModalOpen && (
+        <AddHospitalModal
+          onClose={() => setIsAddHospitalModalOpen(false)}
+          onSubmit={handleAddHospital}
+        />
+      )}
+
+      {isAddDoctorModalOpen && (
+        <AddDoctorModal
+          onClose={() => setIsAddDoctorModalOpen(false)}
+          onSubmit={handleAddDoctor}
         />
       )}
     </Layout>
