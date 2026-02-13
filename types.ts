@@ -10,28 +10,34 @@ export enum UserRole {
 
 export enum ReferralStatus {
   CREATED = 'CREATED',
-  APPOINTMENT_BOOKED = 'APPOINTMENT_BOOKED',
-  CONSULTATION_COMPLETED = 'CONSULTATION_COMPLETED',
-  DIAGNOSIS_UPDATED = 'DIAGNOSIS_UPDATED',
-  SURGERY_RECOMMENDED = 'SURGERY_RECOMMENDED',
   SURGERY_COMPLETED = 'SURGERY_COMPLETED',
-  CASE_CLOSED = 'CASE_CLOSED'
+  MEDICATION_DONE = 'MEDICATION_DONE',
+  PACKAGE_DISCUSSED = 'PACKAGE_DISCUSSED',
+  SURGERY_LOST = 'SURGERY_LOST',
+  NOT_ARRIVED = 'NOT_ARRIVED',
+  FOLLOWUP_SURGERY = 'FOLLOWUP_SURGERY',
+  FOLLOWUP = 'FOLLOWUP',
+  PRE_OPS = 'PRE_OPS',
+  RNR = 'RNR',
+  // Deprecated but kept for backward compatibility with initial mocks
+  APPOINTMENT_BOOKED = 'APPOINTMENT_BOOKED'
 }
 
 export interface User {
-  id: string;
+  id: string; // UUID in DB
   name: string;
   email: string;
+  phone?: string;
   role: UserRole;
   username?: string;
   password?: string;
-  organizationId?: string;
+  organizationId?: string; // UUID of Hospital
   registrationNumber?: string;
   location?: string;
 }
 
 export interface Hospital {
-  id: string;
+  id: string; // UUID in DB
   name: string;
   registrationNumber: string;
   address: string;
@@ -42,26 +48,28 @@ export interface Hospital {
 }
 
 export interface Referral {
-  id: string;
+  id: string; // UUID in DB
   patientName: string;
   patientMobile: string;
-  referringDoctorId: string;
-  hospitalId: string;
-  specialistId?: string;
+  referringDoctorId: string; // UUID of Profile
+  hospitalId: string; // UUID of Hospital
+  specialistId?: string; // UUID of Profile
   status: ReferralStatus;
   createdAt: string;
   updatedAt: string;
+  fileId?: string;
+  note?: string;
   diagnosisSummary?: string;
   procedureRecommended?: string;
   surgeryDate?: string;
   packageCost?: number;
   discountValue?: number;
   discountAllocation?: 'PATIENT' | 'NGO' | 'RETAINED';
-  ngoId?: string;
+  ngoId?: string; // UUID of NGO
 }
 
 export interface NGO {
-  id: string;
+  id: string; // UUID in DB
   name: string;
   mission: string;
 }

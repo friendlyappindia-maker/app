@@ -29,6 +29,7 @@ export const MOCK_DOCTORS: User[] = [
     id: 'd1',
     name: 'Dr. Rajesh Kumar',
     email: 'rajesh.k@clinic.com',
+    phone: '+91 91234 56789',
     username: 'doctor_kumar',
     password: 'password123',
     role: UserRole.REFERRING_DOCTOR,
@@ -39,6 +40,7 @@ export const MOCK_DOCTORS: User[] = [
     id: 'd2',
     name: 'Dr. Anita Desai',
     email: 'anita.d@med.com',
+    phone: '+91 98765 43210',
     username: 'doctor_anita',
     password: 'password123',
     role: UserRole.REFERRING_DOCTOR,
@@ -88,7 +90,9 @@ export const INITIAL_REFERRALS: Referral[] = [
     packageCost: 250000,
     discountValue: 15000,
     discountAllocation: 'NGO',
-    ngoId: 'n1'
+    ngoId: 'n1',
+    fileId: 'FID-501',
+    note: 'Priority case'
   },
   {
     id: 'ref-002',
@@ -102,12 +106,17 @@ export const INITIAL_REFERRALS: Referral[] = [
   }
 ];
 
+// Fix: Removed deprecated and non-existent ReferralStatus property references to resolve TypeScript property errors.
 export const STATUS_COLORS: Record<ReferralStatus, string> = {
   [ReferralStatus.CREATED]: 'bg-blue-100 text-blue-700 border-blue-200',
   [ReferralStatus.APPOINTMENT_BOOKED]: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-  [ReferralStatus.CONSULTATION_COMPLETED]: 'bg-purple-100 text-purple-700 border-purple-200',
-  [ReferralStatus.DIAGNOSIS_UPDATED]: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  [ReferralStatus.SURGERY_RECOMMENDED]: 'bg-orange-100 text-orange-700 border-orange-200',
-  [ReferralStatus.SURGERY_COMPLETED]: 'bg-green-100 text-green-700 border-green-200',
-  [ReferralStatus.CASE_CLOSED]: 'bg-slate-100 text-slate-700 border-slate-200'
+  [ReferralStatus.SURGERY_COMPLETED]: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  [ReferralStatus.MEDICATION_DONE]: 'bg-teal-100 text-teal-700 border-teal-200',
+  [ReferralStatus.PACKAGE_DISCUSSED]: 'bg-purple-100 text-purple-700 border-purple-200',
+  [ReferralStatus.SURGERY_LOST]: 'bg-rose-100 text-rose-700 border-rose-200',
+  [ReferralStatus.NOT_ARRIVED]: 'bg-slate-100 text-slate-700 border-slate-200',
+  [ReferralStatus.FOLLOWUP_SURGERY]: 'bg-cyan-100 text-cyan-700 border-cyan-200',
+  [ReferralStatus.FOLLOWUP]: 'bg-sky-100 text-sky-700 border-sky-200',
+  [ReferralStatus.PRE_OPS]: 'bg-amber-100 text-amber-700 border-amber-200',
+  [ReferralStatus.RNR]: 'bg-gray-100 text-gray-700 border-gray-200',
 };

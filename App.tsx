@@ -28,7 +28,8 @@ import {
   Settings,
   Lock,
   User as UserIcon,
-  AlertCircle
+  AlertCircle,
+  MessageSquare
 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -94,6 +95,12 @@ const App: React.FC = () => {
   const handleAddDoctor = (doctor: User) => {
     setUsers(prev => [...prev, doctor]);
     setIsAddDoctorModalOpen(false);
+  };
+
+  const updateReferralField = (referralId: string, field: keyof Referral, value: any) => {
+    setReferrals(prev => prev.map(ref => 
+      ref.id === referralId ? { ...ref, [field]: value, updatedAt: new Date().toISOString() } : ref
+    ));
   };
 
   if (!currentUser) {
@@ -252,26 +259,103 @@ const App: React.FC = () => {
             <thead>
               <tr className="bg-slate-50/50 text-slate-400 uppercase text-[10px] font-bold tracking-widest">
                 <th className="px-6 py-4">Patient</th>
-                <th className="px-6 py-4">Destination</th>
-                <th className="px-6 py-4">Source Dr.</th>
+                <th className="px-6 py-4">Doctor Details</th>
+                <th className="px-6 py-4">File ID</th>
                 <th className="px-6 py-4 text-center">Status</th>
+                <th className="px-6 py-4">Note</th>
                 <th className="px-6 py-4">Created</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {userReferrals.length > 0 ? (
-                userReferrals.map((ref) => (
-                  <tr key={ref.id} className="hover:bg-slate-50/80 transition-colors group">
-                    <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 font-bold text-sm">{ref.patientName ? ref.patientName[0] : 'P'}</div><div><p className="font-bold text-slate-900 leading-none">{ref.patientName}</p><p className="text-xs text-slate-500 mt-1">{ref.patientMobile}</p></div></div></td>
-                    <td className="px-6 py-4"><p className="text-sm font-medium text-slate-700">{hospitals.find(h => h.id === ref.hospitalId)?.name || 'Unknown Hospital'}</p></td>
-                    <td className="px-6 py-4"><p className="text-sm font-medium text-slate-700">{users.find(u => u.id === ref.referringDoctorId)?.name || 'Admin'}</p></td>
-                    <td className="px-6 py-4 text-center"><span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold border ${STATUS_COLORS[ref.status] || 'bg-slate-100 text-slate-600'}`}>{ref.status.replace(/_/g, ' ')}</span></td>
-                    <td className="px-6 py-4 text-sm text-slate-500">{new Date(ref.createdAt).toLocaleDateString()}</td>
-                  </tr>
-                ))
+                userReferrals.map((ref) => {
+                  const doctor = users.find(u => u.id === ref.referringDoctorId);
+                  const isHospital = currentUser.role === UserRole.HOSPITAL_ADMIN;
+                  
+                  return (
+                    <tr key={ref.id} className="hover:bg-slate-50/80 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 font-bold text-sm">
+                            {ref.patientName ? ref.patientName[0] : 'P'}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 leading-none">{ref.patientName}</p>
+                            <p className="text-xs text-slate-500 mt-1">{ref.patientMobile}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1">
+                          <p className="text-sm font-bold text-slate-800">{doctor?.name || 'Unknown Doctor'}</p>
+                          <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                            <Phone className="w-3 h-3 text-blue-500" />
+                            {doctor?.phone || 'No phone'}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {isHospital ? (
+                          <input 
+                            type="text"
+                            placeholder="Set File ID"
+                            value={ref.fileId || ''}
+                            onChange={(e) => updateReferralField(ref.id, 'fileId', e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none"
+                          />
+                        ) : (
+                          <span className="text-xs font-mono text-slate-500">{ref.fileId || '-'}</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {isHospital ? (
+                          <select 
+                            value={ref.status}
+                            onChange={(e) => updateReferralField(ref.id, 'status', e.target.value)}
+                            className={`w-full text-[11px] font-bold border rounded-full px-3 py-1.5 outline-none cursor-pointer ${STATUS_COLORS[ref.status] || 'bg-slate-100 text-slate-600'}`}
+                          >
+                            <option value={ReferralStatus.CREATED}>Created</option>
+                            <option value={ReferralStatus.SURGERY_COMPLETED}>Surgery Completed</option>
+                            <option value={ReferralStatus.MEDICATION_DONE}>Medication Done</option>
+                            <option value={ReferralStatus.PACKAGE_DISCUSSED}>Package Discussed</option>
+                            <option value={ReferralStatus.SURGERY_LOST}>Surgery Lost</option>
+                            <option value={ReferralStatus.NOT_ARRIVED}>Not Arrived</option>
+                            <option value={ReferralStatus.FOLLOWUP_SURGERY}>Follow-up Surgery</option>
+                            <option value={ReferralStatus.FOLLOWUP}>Follow-up</option>
+                            <option value={ReferralStatus.PRE_OPS}>Pre-Ops</option>
+                            <option value={ReferralStatus.RNR}>RNR</option>
+                          </select>
+                        ) : (
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold border ${STATUS_COLORS[ref.status] || 'bg-slate-100 text-slate-600'}`}>
+                            {ref.status.replace(/_/g, ' ')}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {isHospital ? (
+                          <div className="relative group/note">
+                            <MessageSquare className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400" />
+                            <input 
+                              type="text"
+                              placeholder="Add Note"
+                              value={ref.note || ''}
+                              onChange={(e) => updateReferralField(ref.id, 'note', e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                          </div>
+                        ) : (
+                          <p className="text-xs text-slate-500 italic max-w-[150px] truncate">{ref.note || 'No remarks'}</p>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-[11px] text-slate-500 font-medium">
+                        {new Date(ref.createdAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">No referrals found.</td>
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-medium">No referrals found in current stream.</td>
                 </tr>
               )}
             </tbody>
@@ -339,6 +423,7 @@ const App: React.FC = () => {
           <thead>
             <tr className="bg-slate-50/50 text-slate-400 uppercase text-[10px] font-bold tracking-widest">
               <th className="px-6 py-4">Physician Name</th>
+              <th className="px-6 py-4">Contact</th>
               <th className="px-6 py-4">Reg. Number</th>
               <th className="px-6 py-4">Location</th>
               <th className="px-6 py-4 text-right">Actions</th>
@@ -348,6 +433,10 @@ const App: React.FC = () => {
             {users.filter(u => u.role === UserRole.REFERRING_DOCTOR).map(doctor => (
               <tr key={doctor.id} className="hover:bg-slate-50/50 transition-colors group">
                 <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full border border-slate-200 overflow-hidden"><img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${doctor.email}`} alt="avatar" /></div><p className="font-bold text-slate-900">{doctor.name}</p></div></td>
+                <td className="px-6 py-4 text-sm text-slate-600 flex flex-col">
+                  <span className="font-medium text-slate-800">{doctor.phone || 'N/A'}</span>
+                  <span className="text-[10px] text-slate-400">{doctor.email}</span>
+                </td>
                 <td className="px-6 py-4"><span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded">{doctor.registrationNumber}</span></td>
                 <td className="px-6 py-4 text-sm text-slate-600">{doctor.location}</td>
                 <td className="px-6 py-4 text-right">
