@@ -1,11 +1,24 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-// Fix: Strictly use process.env.API_KEY for initialization
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to safely get the AI instance
+const getAIInstance = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey || apiKey === "undefined" || apiKey === "PLACEHOLDER_API_KEY") {
+    console.warn("Gemini API Key is missing or invalid. AI features will be disabled.");
+    return null;
+  }
+  try {
+    return new GoogleGenAI({ apiKey });
+  } catch (err) {
+    console.error("Failed to initialize GoogleGenAI:", err);
+    return null;
+  }
+};
 
 export const getSmartDiagnosisSummary = async (diagnosisNotes: string): Promise<string> => {
-  if (!process.env.API_KEY || !diagnosisNotes) return diagnosisNotes;
+  const ai = getAIInstance();
+  if (!ai || !diagnosisNotes) return diagnosisNotes;
 
   try {
     const response = await ai.models.generateContent({
@@ -17,13 +30,14 @@ export const getSmartDiagnosisSummary = async (diagnosisNotes: string): Promise<
     });
     return response.text || diagnosisNotes;
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Gemini Error in getSmartDiagnosisSummary:", error);
     return diagnosisNotes;
   }
 };
 
 export const generatePatientNotification = async (hospitalName: string, doctorName: string): Promise<string> => {
-  if (!process.env.API_KEY) return `Hello, ${doctorName} has referred you to ${hospitalName}. Please contact them at your convenience.`;
+  const ai = getAIInstance();
+  if (!ai) return `Hello, ${doctorName} has referred you to ${hospitalName}. Please contact them at your convenience.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -32,6 +46,7 @@ export const generatePatientNotification = async (hospitalName: string, doctorNa
     });
     return response.text || "Referral successful.";
   } catch (error) {
+    console.error("Gemini Error in generatePatientNotification:", error);
     return "Referral successful.";
   }
 };

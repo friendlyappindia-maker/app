@@ -31,9 +31,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [referrals, setReferrals] = useState<Referral[]>(INITIAL_REFERRALS);
-  const [hospitals, setHospitals] = useState<Hospital[]>(MOCK_HOSPITALS);
-  const [doctors, setDoctors] = useState<User[]>(MOCK_DOCTORS);
+  const [referrals, setReferrals] = useState<Referral[]>(INITIAL_REFERRALS || []);
+  const [hospitals, setHospitals] = useState<Hospital[]>(MOCK_HOSPITALS || []);
+  const [doctors, setDoctors] = useState<User[]>(MOCK_DOCTORS || []);
   const [activeTab, setActiveTab] = useState('dashboard');
   
   const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
@@ -41,8 +41,10 @@ const App: React.FC = () => {
   const [isAddDoctorModalOpen, setIsAddDoctorModalOpen] = useState(false);
 
   useEffect(() => {
-    // Defaulting to doctor for initial demo load
-    setCurrentUser(MOCK_DOCTORS[0]);
+    // Defaulting to doctor for initial demo load if available
+    if (MOCK_DOCTORS && MOCK_DOCTORS.length > 0) {
+      setCurrentUser(MOCK_DOCTORS[0]);
+    }
   }, []);
 
   const handleLogout = () => setCurrentUser(null);
@@ -58,24 +60,24 @@ const App: React.FC = () => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setReferrals([newRef, ...referrals]);
+    setReferrals(prev => [newRef, ...prev]);
     setIsReferralModalOpen(false);
   };
 
   const handleAddHospital = (hospital: Hospital) => {
-    setHospitals([...hospitals, hospital]);
+    setHospitals(prev => [...prev, hospital]);
     setIsAddHospitalModalOpen(false);
   };
 
   const handleAddDoctor = (doctor: User) => {
-    setDoctors([...doctors, doctor]);
+    setDoctors(prev => [...prev, doctor]);
     setIsAddDoctorModalOpen(false);
   };
 
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md text-center space-y-8">
+        <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md text-center space-y-8 animate-in fade-in zoom-in duration-300">
           <div>
             <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mx-auto shadow-xl shadow-blue-500/20 mb-6">M</div>
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">MedRef Connect</h1>
@@ -91,7 +93,7 @@ const App: React.FC = () => {
                 </div>
                 <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-amber-500" />
               </button>
-              <button onClick={() => setCurrentUser(MOCK_DOCTORS[0])} className="w-full p-4 rounded-xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 text-left transition-all group flex items-center justify-between">
+              <button onClick={() => setCurrentUser(MOCK_DOCTORS[0] || null)} className="w-full p-4 rounded-xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 text-left transition-all group flex items-center justify-between">
                 <div><p className="font-bold text-slate-800">MBBS Doctor</p><p className="text-xs text-slate-500">Create and track referrals</p></div>
                 <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500" />
               </button>
@@ -155,12 +157,12 @@ const App: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {referrals.map((ref) => (
+              {userReferrals.map((ref) => (
                 <tr key={ref.id} className="hover:bg-slate-50/80 transition-colors group">
-                  <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 font-bold text-sm">{ref.patientName[0]}</div><div><p className="font-bold text-slate-900 leading-none">{ref.patientName}</p><p className="text-xs text-slate-500 mt-1">{ref.patientMobile}</p></div></div></td>
-                  <td className="px-6 py-4"><p className="text-sm font-medium text-slate-700">{hospitals.find(h => h.id === ref.hospitalId)?.name}</p></td>
+                  <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 font-bold text-sm">{ref.patientName ? ref.patientName[0] : 'P'}</div><div><p className="font-bold text-slate-900 leading-none">{ref.patientName}</p><p className="text-xs text-slate-500 mt-1">{ref.patientMobile}</p></div></div></td>
+                  <td className="px-6 py-4"><p className="text-sm font-medium text-slate-700">{hospitals.find(h => h.id === ref.hospitalId)?.name || 'Unknown Hospital'}</p></td>
                   <td className="px-6 py-4"><p className="text-sm font-medium text-slate-700">{doctors.find(d => d.id === ref.referringDoctorId)?.name || 'Admin'}</p></td>
-                  <td className="px-6 py-4 text-center"><span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold border ${STATUS_COLORS[ref.status]}`}>{ref.status.replace(/_/g, ' ')}</span></td>
+                  <td className="px-6 py-4 text-center"><span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold border ${STATUS_COLORS[ref.status] || 'bg-slate-100 text-slate-600'}`}>{ref.status.replace(/_/g, ' ')}</span></td>
                   <td className="px-6 py-4 text-sm text-slate-500">{new Date(ref.createdAt).toLocaleDateString()}</td>
                 </tr>
               ))}
@@ -195,7 +197,7 @@ const App: React.FC = () => {
                 <p className="text-xs text-slate-500 flex items-center gap-2"><Phone className="w-3.5 h-3.5" /> {hospital.phone}</p>
               </div>
               <div className="mt-4 flex flex-wrap gap-1.5">
-                {hospital.capabilities.map((cap, i) => (
+                {hospital.capabilities?.map((cap, i) => (
                   <span key={i} className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100 uppercase">{cap}</span>
                 ))}
               </div>
@@ -233,10 +235,9 @@ const App: React.FC = () => {
           <tbody className="divide-y divide-slate-100">
             {doctors.map(doctor => (
               <tr key={doctor.id} className="hover:bg-slate-50/50 transition-colors group">
-                <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full border border-slate-200 overflow-hidden"><img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${doctor.id}`} alt="avatar" /></div><p className="font-bold text-slate-900">{doctor.name}</p></div></td>
+                <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full border border-slate-200 overflow-hidden"><img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${doctor.email}`} alt="avatar" /></div><p className="font-bold text-slate-900">{doctor.name}</p></div></td>
                 <td className="px-6 py-4"><span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded">{doctor.registrationNumber}</span></td>
                 <td className="px-6 py-4 text-sm text-slate-600">{doctor.location}</td>
-                {/* Fixed: Added missing Settings icon from lucide-react */}
                 <td className="px-6 py-4 text-right"><button className="text-slate-400 hover:text-blue-600 p-2"><Settings className="w-4 h-4" /></button></td>
               </tr>
             ))}
@@ -251,10 +252,10 @@ const App: React.FC = () => {
       {activeTab === 'dashboard' && renderDashboard()}
       {activeTab === 'hospitals' && renderHospitals()}
       {activeTab === 'doctors' && renderDoctors()}
-      {activeTab === 'referrals' && renderDashboard() /* Reusing dashboard for now for global referral view */}
-      {/* Fixed: Added missing Settings icon from lucide-react */}
+      {activeTab === 'referrals' && renderDashboard()}
       {activeTab === 'settings' && <div className="p-12 text-center text-slate-400"><Settings className="w-12 h-12 mx-auto mb-4 opacity-20" /><p className="font-medium">System Settings Coming Soon</p></div>}
       
+      {/* Fix: Corrected typo in prop name from 'referring doctor' to 'referringDoctor' */}
       {isReferralModalOpen && <ReferralModal onClose={() => setIsReferralModalOpen(false)} onSubmit={handleAddReferral} hospitals={hospitals} referringDoctor={currentUser} />}
       {isAddHospitalModalOpen && <AddHospitalModal onClose={() => setIsAddHospitalModalOpen(false)} onSubmit={handleAddHospital} />}
       {isAddDoctorModalOpen && <AddDoctorModal onClose={() => setIsAddDoctorModalOpen(false)} onSubmit={handleAddDoctor} />}
