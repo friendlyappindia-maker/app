@@ -100,16 +100,16 @@ export const INITIAL_REFERRALS: Referral[] = [
     patientMobile: '9911223344',
     referringDoctorId: 'd1',
     hospitalId: 'h2',
-    status: ReferralStatus.APPOINTMENT_BOOKED,
+    status: ReferralStatus.CREATED,
     createdAt: '2023-11-10T09:15:00Z',
-    updatedAt: '2023-11-10T09:15:00Z'
+    updatedAt: '2023-11-10T09:15:00Z',
+    fileId: '',
+    note: ''
   }
 ];
 
-// Fix: Removed deprecated and non-existent ReferralStatus property references to resolve TypeScript property errors.
 export const STATUS_COLORS: Record<ReferralStatus, string> = {
   [ReferralStatus.CREATED]: 'bg-blue-100 text-blue-700 border-blue-200',
-  [ReferralStatus.APPOINTMENT_BOOKED]: 'bg-indigo-100 text-indigo-700 border-indigo-200',
   [ReferralStatus.SURGERY_COMPLETED]: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   [ReferralStatus.MEDICATION_DONE]: 'bg-teal-100 text-teal-700 border-teal-200',
   [ReferralStatus.PACKAGE_DISCUSSED]: 'bg-purple-100 text-purple-700 border-purple-200',

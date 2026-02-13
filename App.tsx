@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, UserRole, Referral, ReferralStatus, Hospital } from './types';
 import { 
   MOCK_HOSPITALS, 
@@ -29,7 +29,17 @@ import {
   Lock,
   User as UserIcon,
   AlertCircle,
-  MessageSquare
+  MessageSquare,
+  Upload,
+  X,
+  Save,
+  Trash2,
+  Stethoscope,
+  Info,
+  ExternalLink,
+  ChevronLeft,
+  // Fix: Added missing PlusCircle import
+  PlusCircle
 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -52,6 +62,21 @@ const App: React.FC = () => {
   const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
   const [isAddHospitalModalOpen, setIsAddHospitalModalOpen] = useState(false);
   const [isAddDoctorModalOpen, setIsAddDoctorModalOpen] = useState(false);
+  
+  // Hospital Detail View State
+  const [selectedHospitalForView, setSelectedHospitalForView] = useState<Hospital | null>(null);
+
+  // Profile Edit State
+  const [editingHospital, setEditingHospital] = useState<Hospital | null>(null);
+  const [newCapability, setNewCapability] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (currentUser?.role === UserRole.HOSPITAL_ADMIN && currentUser.organizationId) {
+      const hospital = hospitals.find(h => h.id === currentUser.organizationId);
+      if (hospital) setEditingHospital({ ...hospital });
+    }
+  }, [currentUser, hospitals]);
 
   const handleLogout = () => {
     setCurrentUser(null);
@@ -86,13 +111,47 @@ const App: React.FC = () => {
     setIsReferralModalOpen(false);
   };
 
-  const handleAddHospital = (hospital: Hospital, adminUser: User) => {
-    setHospitals(prev => [...prev, hospital]);
+  const handleAddHospital = (username: string, password: string) => {
+    const hospitalId = `h-${Date.now()}`;
+    const newHospital: Hospital = {
+      id: hospitalId,
+      name: `${username.charAt(0).toUpperCase() + username.slice(1)} Hospital`,
+      registrationNumber: `HOSP-TBD-${Math.floor(Math.random() * 1000)}`,
+      address: 'Update Address in Profile',
+      city: 'Update City',
+      contactPerson: 'Admin',
+      phone: '0000000000',
+      capabilities: ['General Surgery'],
+      images: []
+    };
+
+    const adminUser: User = {
+      id: `hu-${Date.now()}`,
+      name: `${username.charAt(0).toUpperCase() + username.slice(1)} Admin`,
+      email: `${username}@medref-hospital.com`,
+      username: username,
+      password: password,
+      role: UserRole.HOSPITAL_ADMIN,
+      organizationId: hospitalId
+    };
+
+    setHospitals(prev => [...prev, newHospital]);
     setUsers(prev => [...prev, adminUser]);
     setIsAddHospitalModalOpen(false);
   };
 
-  const handleAddDoctor = (doctor: User) => {
+  const handleAddDoctor = (username: string, password: string) => {
+    const doctor: User = {
+      id: `d-${Date.now()}`,
+      name: `Dr. ${username.charAt(0).toUpperCase() + username.slice(1)}`,
+      email: `${username}@medref.com`,
+      phone: '',
+      username: username,
+      password: password,
+      role: UserRole.REFERRING_DOCTOR,
+      registrationNumber: 'REG-PENDING',
+      location: 'Update Location'
+    };
     setUsers(prev => [...prev, doctor]);
     setIsAddDoctorModalOpen(false);
   };
@@ -101,6 +160,51 @@ const App: React.FC = () => {
     setReferrals(prev => prev.map(ref => 
       ref.id === referralId ? { ...ref, [field]: value, updatedAt: new Date().toISOString() } : ref
     ));
+  };
+
+  const handleUpdateHospitalProfile = () => {
+    if (!editingHospital) return;
+    setHospitals(prev => prev.map(h => h.id === editingHospital.id ? editingHospital : h));
+    alert('Hospital profile updated successfully!');
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !editingHospital) return;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditingHospital(prev => prev ? {
+          ...prev,
+          images: [...(prev.images || []), reader.result as string]
+        } : null);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setEditingHospital(prev => prev ? {
+      ...prev,
+      images: prev.images?.filter((_, i) => i !== index)
+    } : null);
+  };
+
+  const addCapability = () => {
+    if (!newCapability.trim() || !editingHospital) return;
+    setEditingHospital(prev => prev ? {
+      ...prev,
+      capabilities: [...prev.capabilities, newCapability.trim()]
+    } : null);
+    setNewCapability('');
+  };
+
+  const removeCapability = (index: number) => {
+    setEditingHospital(prev => prev ? {
+      ...prev,
+      capabilities: prev.capabilities.filter((_, i) => i !== index)
+    } : null);
   };
 
   if (!currentUser) {
@@ -365,46 +469,360 @@ const App: React.FC = () => {
     </div>
   );
 
+  const renderHospitalDetailModal = (hospital: Hospital) => (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+      <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in duration-300 max-h-[90vh] flex flex-col">
+        {/* Modal Header */}
+        <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-white relative">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm">
+              <HospitalIcon className="w-8 h-8" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">{hospital.name}</h2>
+              <p className="text-slate-500 font-medium flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                {hospital.registrationNumber} • Verified Facility
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setSelectedHospitalForView(null)}
+            className="p-3 text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-2xl transition-all"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Modal Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+          {/* Gallery Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Eye className="w-5 h-5 text-indigo-600" />
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Facility Showcase</h3>
+            </div>
+            {hospital.images && hospital.images.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {hospital.images.map((img, i) => (
+                  <div key={i} className="aspect-video rounded-[24px] overflow-hidden border border-slate-100 shadow-sm hover:scale-[1.02] transition-transform duration-300">
+                    <img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-[24px] p-12 text-center text-slate-400">
+                <Plus className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                <p className="font-bold">No facility photos uploaded yet</p>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            {/* Contact & Location */}
+            <div className="space-y-6">
+              <div className="bg-slate-50 p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-5">
+                 <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="w-5 h-5 text-indigo-600" />
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Location & Reach</h3>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mb-1">Physical Address</p>
+                    <p className="text-slate-700 font-bold leading-relaxed">{hospital.address}</p>
+                    <p className="text-indigo-600 font-black">{hospital.city}</p>
+                  </div>
+                  <div className="pt-4 border-t border-slate-200/50 flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mb-1">Direct Contact</p>
+                      <p className="text-slate-900 font-black text-lg">{hospital.phone}</p>
+                    </div>
+                    <a href={`tel:${hospital.phone}`} className="p-3 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-200"><Phone className="w-5 h-5" /></a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Specialties */}
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-[24px] border-2 border-indigo-50 shadow-sm space-y-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <Stethoscope className="w-5 h-5 text-indigo-600" />
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Surgical Capabilities</h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {hospital.capabilities.map((cap, i) => (
+                    <span key={i} className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl border border-indigo-100 font-black text-sm uppercase tracking-tight">
+                      {cap}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-6 pt-4 border-t border-slate-100">
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed italic">
+                    Referrals for these specialties are processed with priority tracking in the MedRef system.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="p-8 border-t border-slate-100 bg-slate-50 flex items-center justify-end">
+           <button 
+              onClick={() => {
+                setSelectedHospitalForView(null);
+                setActiveTab('dashboard');
+                setIsReferralModalOpen(true);
+              }}
+              className="flex items-center gap-2 bg-indigo-600 text-white font-black px-8 py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/30 group"
+            >
+              <PlusCircle className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+              CREATE REFERRAL NOW
+            </button>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderHospitals = () => (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-12">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Registered Hospitals</h1>
-          <p className="text-slate-500">Manage surgical facilities in the MedRef network.</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Registered Hospitals</h1>
+          <p className="text-slate-500 font-medium">Browse verified surgical facilities and their specializations.</p>
         </div>
         {currentUser.role === UserRole.MASTER_ADMIN && (
           <button onClick={() => setIsAddHospitalModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"><Plus className="w-5 h-5" /> Register New Hospital</button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {hospitals.map(hospital => (
-          <div key={hospital.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-all group">
+          <div key={hospital.id} className="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden hover:shadow-xl hover:border-indigo-200 transition-all group relative">
+            {hospital.images && hospital.images.length > 0 ? (
+              <div className="h-48 overflow-hidden relative">
+                <img src={hospital.images[0]} alt={hospital.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
+              </div>
+            ) : (
+              <div className="h-48 bg-slate-100 flex items-center justify-center text-slate-300">
+                <HospitalIcon className="w-12 h-12" />
+              </div>
+            )}
+            
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
-                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors"><HospitalIcon className="w-6 h-6" /></div>
-                <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded tracking-widest">{hospital.registrationNumber}</span>
+                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                  <HospitalIcon className="w-6 h-6" />
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-black bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full border border-emerald-100 tracking-widest uppercase mb-1 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" /> VERIFIED
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400 tracking-widest">{hospital.registrationNumber}</span>
+                </div>
               </div>
-              <h3 className="text-lg font-bold text-slate-900">{hospital.name}</h3>
-              <div className="mt-3 space-y-2">
-                <p className="text-xs text-slate-500 flex items-center gap-2"><MapPin className="w-3.5 h-3.5" /> {hospital.address}, {hospital.city}</p>
-                <p className="text-xs text-slate-500 flex items-center gap-2"><Phone className="w-3.5 h-3.5" /> {hospital.phone}</p>
+
+              <h3 className="text-xl font-black text-slate-900 tracking-tight group-hover:text-indigo-600 transition-colors">{hospital.name}</h3>
+              
+              <div className="mt-4 space-y-2">
+                <p className="text-sm text-slate-600 flex items-center gap-2.5 font-medium">
+                  <MapPin className="w-4 h-4 text-slate-400" /> 
+                  {hospital.city}
+                </p>
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {hospital.capabilities?.slice(0, 3).map((cap, i) => (
+                    <span key={i} className="text-[10px] font-black bg-slate-50 text-slate-500 px-2.5 py-1 rounded-lg border border-slate-200 uppercase tracking-tighter">
+                      {cap}
+                    </span>
+                  ))}
+                  {hospital.capabilities.length > 3 && (
+                    <span className="text-[10px] font-black text-slate-400 px-2.5 py-1">+{hospital.capabilities.length - 3} more</span>
+                  )}
+                </div>
               </div>
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {hospital.capabilities?.map((cap, i) => (
-                  <span key={i} className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100 uppercase">{cap}</span>
-                ))}
+
+              <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between">
+                <button 
+                  onClick={() => setSelectedHospitalForView(hospital)}
+                  className="flex items-center gap-2 text-indigo-600 font-black text-sm hover:underline tracking-tight group/btn"
+                >
+                  VIEW PROFILE
+                  <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                </button>
+                {currentUser.role === UserRole.REFERRING_DOCTOR && (
+                  <button 
+                    onClick={() => {
+                      setSelectedHospitalForView(null);
+                      setIsReferralModalOpen(true);
+                    }}
+                    className="p-3 bg-slate-900 text-white rounded-2xl hover:bg-indigo-600 transition-all shadow-lg"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                )}
               </div>
-            </div>
-            <div className="bg-slate-50 p-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-400">
-              <span>Primary Contact: {hospital.contactPerson}</span>
-              {currentUser.role === UserRole.MASTER_ADMIN && <button className="text-blue-600 hover:underline">Manage Account</button>}
             </div>
           </div>
         ))}
       </div>
     </div>
   );
+
+  const renderHospitalProfile = () => {
+    if (!editingHospital) return null;
+
+    return (
+      <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Hospital Profile</h1>
+            <p className="text-slate-500 mt-1">Configure your facility's public information and services.</p>
+          </div>
+          <button 
+            onClick={handleUpdateHospitalProfile}
+            className="flex items-center gap-2 bg-indigo-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
+          >
+            <Save className="w-5 h-5" />
+            Save Profile Changes
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Basic Info */}
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                <Settings className="w-5 h-5 text-indigo-600" />
+                <h3 className="font-bold text-slate-800">Basic Information</h3>
+              </div>
+              <div className="grid grid-cols-1 gap-6">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Full Hospital Name</label>
+                  <input 
+                    type="text"
+                    value={editingHospital.name}
+                    onChange={(e) => setEditingHospital({...editingHospital, name: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50 font-medium"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Address</label>
+                  <textarea 
+                    rows={3}
+                    value={editingHospital.address}
+                    onChange={(e) => setEditingHospital({...editingHospital, address: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50 font-medium"
+                    placeholder="Physical street address"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">City</label>
+                    <input 
+                      type="text"
+                      value={editingHospital.city}
+                      onChange={(e) => setEditingHospital({...editingHospital, city: e.target.value})}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50 font-medium"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Phone Number</label>
+                    <input 
+                      type="tel"
+                      value={editingHospital.phone}
+                      onChange={(e) => setEditingHospital({...editingHospital, phone: e.target.value})}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50 font-medium"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Surgical Capabilities */}
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                <Stethoscope className="w-5 h-5 text-indigo-600" />
+                <h3 className="font-bold text-slate-800">Surgical Capabilities</h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {editingHospital.capabilities.map((cap, i) => (
+                  <div key={i} className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full border border-indigo-100 font-bold text-xs group">
+                    {cap}
+                    <button onClick={() => removeCapability(i)} className="text-indigo-400 hover:text-indigo-600 transition-colors">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input 
+                  type="text"
+                  placeholder="e.g. Laparoscopic Surgery"
+                  value={newCapability}
+                  onChange={(e) => setNewCapability(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addCapability()}
+                  className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+                <button 
+                  onClick={addCapability}
+                  className="px-6 py-3 bg-indigo-100 text-indigo-700 font-bold rounded-xl hover:bg-indigo-200 transition-colors"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Image Management */}
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <Upload className="w-5 h-5 text-indigo-600" />
+                  <h3 className="font-bold text-slate-800">Gallery</h3>
+                </div>
+                <span className="text-[10px] font-bold text-slate-400">{editingHospital.images?.length || 0} / 5</span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                {editingHospital.images?.map((img, i) => (
+                  <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-slate-100 group">
+                    <img src={img} className="w-full h-full object-cover" />
+                    <button 
+                      onClick={() => removeImage(i)}
+                      className="absolute top-1 right-1 p-1.5 bg-white/90 text-rose-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                {(editingHospital.images?.length || 0) < 5 && (
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="aspect-square rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-indigo-400 hover:text-indigo-400 transition-all gap-2"
+                  >
+                    <Plus className="w-6 h-6" />
+                    <span className="text-[10px] font-bold uppercase">Add Photo</span>
+                  </button>
+                )}
+              </div>
+              <input 
+                type="file"
+                multiple
+                accept="image/*"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              <p className="text-[10px] text-slate-400 font-medium text-center">Images should be under 5MB. Formats: PNG, JPG.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderDoctors = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -425,7 +843,6 @@ const App: React.FC = () => {
               <th className="px-6 py-4">Physician Name</th>
               <th className="px-6 py-4">Contact</th>
               <th className="px-6 py-4">Reg. Number</th>
-              <th className="px-6 py-4">Location</th>
               <th className="px-6 py-4 text-right">Actions</th>
             </tr>
           </thead>
@@ -450,17 +867,30 @@ const App: React.FC = () => {
     </div>
   );
 
+  const renderSettings = () => {
+    if (currentUser.role === UserRole.HOSPITAL_ADMIN) {
+      return renderHospitalProfile();
+    }
+    return (
+      <div className="p-12 text-center text-slate-400">
+        <Settings className="w-12 h-12 mx-auto mb-4 opacity-20" />
+        <p className="font-medium">Master Settings Coming Soon</p>
+      </div>
+    );
+  };
+
   return (
     <Layout user={currentUser} onLogout={handleLogout} activeTab={activeTab} onNavigate={setActiveTab}>
       {activeTab === 'dashboard' && renderDashboard()}
       {activeTab === 'hospitals' && renderHospitals()}
       {activeTab === 'doctors' && renderDoctors()}
       {activeTab === 'referrals' && renderDashboard()}
-      {activeTab === 'settings' && <div className="p-12 text-center text-slate-400"><Settings className="w-12 h-12 mx-auto mb-4 opacity-20" /><p className="font-medium">System Settings Coming Soon</p></div>}
+      {activeTab === 'settings' && renderSettings()}
       
       {isReferralModalOpen && <ReferralModal onClose={() => setIsReferralModalOpen(false)} onSubmit={handleAddReferral} hospitals={hospitals} referringDoctor={currentUser} />}
       {isAddHospitalModalOpen && <AddHospitalModal onClose={() => setIsAddHospitalModalOpen(false)} onSubmit={handleAddHospital} />}
       {isAddDoctorModalOpen && <AddDoctorModal onClose={() => setIsAddDoctorModalOpen(false)} onSubmit={handleAddDoctor} />}
+      {selectedHospitalForView && renderHospitalDetailModal(selectedHospitalForView)}
     </Layout>
   );
 };

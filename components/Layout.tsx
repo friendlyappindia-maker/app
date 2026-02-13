@@ -11,7 +11,8 @@ import {
   Bell, 
   HeartHandshake, 
   ShieldCheck, 
-  PlusCircle 
+  PlusCircle,
+  Building2
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -36,6 +37,7 @@ const Layout: React.FC<LayoutProps> = ({ user, children, onLogout, activeTab, on
       case UserRole.REFERRING_DOCTOR:
         return [
           { icon: LayoutDashboard, label: 'Referral Hub', id: 'dashboard' },
+          { icon: Building2, label: 'Hospitals', id: 'hospitals' }, // Added for doctors
           { icon: FileText, label: 'My Referrals', id: 'referrals' },
           { icon: HeartHandshake, label: 'NGO Impacts', id: 'impact' }
         ];

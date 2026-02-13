@@ -1,9 +1,7 @@
 
 export enum UserRole {
   MASTER_ADMIN = 'MASTER_ADMIN',
-  ADMIN = 'ADMIN',
   HOSPITAL_ADMIN = 'HOSPITAL_ADMIN',
-  HOSPITAL_COORDINATOR = 'HOSPITAL_COORDINATOR',
   REFERRING_DOCTOR = 'REFERRING_DOCTOR',
   NGO_ADMIN = 'NGO_ADMIN'
 }
@@ -18,26 +16,24 @@ export enum ReferralStatus {
   FOLLOWUP_SURGERY = 'FOLLOWUP_SURGERY',
   FOLLOWUP = 'FOLLOWUP',
   PRE_OPS = 'PRE_OPS',
-  RNR = 'RNR',
-  // Deprecated but kept for backward compatibility with initial mocks
-  APPOINTMENT_BOOKED = 'APPOINTMENT_BOOKED'
+  RNR = 'RNR'
 }
 
 export interface User {
-  id: string; // UUID in DB
+  id: string;
   name: string;
   email: string;
   phone?: string;
   role: UserRole;
   username?: string;
   password?: string;
-  organizationId?: string; // UUID of Hospital
+  organizationId?: string;
   registrationNumber?: string;
   location?: string;
 }
 
 export interface Hospital {
-  id: string; // UUID in DB
+  id: string;
   name: string;
   registrationNumber: string;
   address: string;
@@ -45,31 +41,31 @@ export interface Hospital {
   contactPerson: string;
   phone: string;
   capabilities: string[];
+  images?: string[]; // New field for hospital profile images
 }
 
 export interface Referral {
-  id: string; // UUID in DB
+  id: string;
+  fileId?: string;
   patientName: string;
   patientMobile: string;
-  referringDoctorId: string; // UUID of Profile
-  hospitalId: string; // UUID of Hospital
-  specialistId?: string; // UUID of Profile
+  referringDoctorId: string;
+  hospitalId: string;
   status: ReferralStatus;
+  note?: string;
   createdAt: string;
   updatedAt: string;
-  fileId?: string;
-  note?: string;
   diagnosisSummary?: string;
   procedureRecommended?: string;
   surgeryDate?: string;
   packageCost?: number;
   discountValue?: number;
   discountAllocation?: 'PATIENT' | 'NGO' | 'RETAINED';
-  ngoId?: string; // UUID of NGO
+  ngoId?: string;
 }
 
 export interface NGO {
-  id: string; // UUID in DB
+  id: string;
   name: string;
   mission: string;
 }
